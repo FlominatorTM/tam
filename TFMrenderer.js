@@ -222,25 +222,26 @@ class TFMRenderer extends TAMRenderer
 		// set visualization positions of persons by pushing them back into their parent family circle
 		this.SVG_NODE_CIRCLES.each(p =>
 		{
+			// set visualization position to simulation position by default
+			p.vis.x = p.x;
+			p.vis.y = p.y;
+
 			if (p.parentFamily) 
 			{
-				if (p.parentFamily.children.length == 1) {
+				if (p.parentFamily.children.length == 1)
+				{
 					p.vis.x = p.parentFamily.x;
 					p.vis.y = p.parentFamily.y;
 				}
-				else {
-					var dist = distance(p, p.parentFamily);	// actual distance between node simulation positions
-					if (dist > p.fnodedist)
-					{
+				else
+				{
+					var dist = distance(p.vis, p.parentFamily);	// actual distance between node vis positions
+					if (dist > p.fnodedist){
 						var fac = (dist - p.fnodedist) / dist;
-						p.vis.x = p.x + (p.parentFamily.x - p.x) * fac;
-						p.vis.y = p.y + (p.parentFamily.y - p.y) * fac;
+						p.vis.x += (p.parentFamily.x - p.vis.x) * fac;
+						p.vis.y += (p.parentFamily.y - p.vis.y) * fac;
 					}
 				}
-			}
-			else {
-				p.vis.x = p.x; 
-				p.vis.y = p.y;
 			}
 		});
 		
@@ -430,6 +431,42 @@ class TFMRenderer extends TAMRenderer
 		this.addHeightfieldOverlays(SCALARFIELD);
 	
 		console.log("+++ Done Updating ScalarField");
+	}
+
+	// Returns a string representation of the node to be used in tooltips
+	getNodeAttributesAsString(node)
+	{
+		if (node.type == "PERSON")
+		{
+
+			const age = node.bdate && node.ddate
+				? Math.floor((node.ddate - node.bdate) / 31536000000) // 1000ms * 60s * 60min * 24h * 365d
+				: "unknown";
+			const mother = node.getMother();
+			const father = node.getFather();
+
+			return node.getFullName() + (node.id ? " (" + node.id + ")" : "")
+				+ "\n\nBirth: " + (node.bdate ? node.bdate.toLocaleDateString() : "unknown")
+				+ "\nDeath: " + (node.ddate ? node.ddate.toLocaleDateString() : "unknown")
+				+ "\nAge: " + age
+				+ "\nMother: " + (mother ? mother.getFullName() + " (" +  mother.id + ")" : "unknown")
+				+ "\nFather: " + (father ? father.getFullName() + " (" +  father.id + ")" : "unknown");
+		}
+		else if (node.type == "FAMILY")
+		{
+			const wife = node.wife;
+			const husband = node.husband;
+
+			return node.familyname + (node.id ? " (" + node.id + ")" : "")
+				+ "\n\nWife: " + (wife ? wife.getFullName() + " (" + wife.id + ")" : "unknown")
+				+ "\nHusband: " + (husband ? husband.getFullName() + " (" + husband.id + ")" : "unknown")
+				+ "\nChildren: " + (node.children ? node.children.length : "unknown")
+				+ "\nFirst child: " + (node.value ? node.value : "unknown");;
+		}
+		else
+		{
+			return "unknown";
+		}
 	}
 }
 
